@@ -113,7 +113,7 @@ def extract_opcode_line(compiled_output_json: dict) -> dict:
     return opcode_line_dict
 
 
-def match_arch_output_lines(output_json_1: dict, output_json_2: dict) -> dict:
+def match_arch_output_lines(output_json_1: dict, output_json_2: dict, code_str_lines: list = None) -> dict:
 
     matched_dict = dict()
 
@@ -128,9 +128,13 @@ def match_arch_output_lines(output_json_1: dict, output_json_2: dict) -> dict:
     try:
         for i in output_list_1:
             matched_dict[i] = [output_json_1[i], output_json_2[i]]
+
+        if code_str_lines != None:
+            for i in matched_dict.keys():
+                matched_dict[i].append(code_str_lines[i-1])
+
     except KeyError:
         pass
-
     return matched_dict
 
 
@@ -144,17 +148,17 @@ for code_file in code_dir:
 
 with open('x86-arm.csv', 'w') as csv_file:
     writer = csv.writer(csv_file)
-    csv_header = ['x86', 'arm']
+    csv_header = ['x86', 'arm', 'code']
     writer.writerow(csv_header)
 
     for code in range(len(code_dir)):
         print(code_dir[code])
         with open("code_dir/" + code_dir[code], "r") as code_str:
             code_str_op = code_str.read()
+            code_str.seek(0)
+            code_str_lines = code_str.readlines()
             matched_output = match_arch_output_lines(extract_opcode_line(get_json(
-                arch="x86", code_string=code_str_op)), extract_opcode_line(get_json(arch="arm", code_string=code_str_op)))
+                arch="x86", code_string=code_str_op)), extract_opcode_line(get_json(arch="arm", code_string=code_str_op)), code_str_lines)
 
             for i in matched_output.keys():
                 writer.writerow(matched_output[i])
-
-            
