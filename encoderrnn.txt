@@ -1,0 +1,201 @@
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+
+    def forward(self, input, hidden):
+        embedded = self.embedding(input).view(1, 1, -1)
+        output = embedded
+        output, hidden = self.gru(output, hidden)
+        return output, hidden
+
+    def initHidden(self):
+        return torch.zeros(1, 1, self.hidden_size, device=device)
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size)
+
+    def forward(self, input, hidden):
+        embedded = self.embedding(input).view(1, 1, -1)
+        output = embedded
+        output, hidden = self.lstm(output, hidden)
+        return output, hidden
+
+    def initHidden(self):
+        return torch.zeros(1, 1, self.hidden_size, device=device)
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, n_layers=1):
+        super(EncoderRNN, self).__init__()
+        self.n_layers = n_layers
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+    
+    def forward(self, input, hidden):
+        embedded = self.embedding(input).view(1, 1, -1)
+        output = embedded
+        output, hidden = self.gru(output, hidden)
+        return output, hidden
+    
+    def initHidden(self):
+        return Variable(torch.zeros(1, 1, self.hidden_size))
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, n_layers=1):
+        super(EncoderRNN, self).__init__()
+        self.n_layers = n_layers
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+
+    def forward(self, input, hidden):
+        embedded = self.embedding(input).view(1, 1, -1)
+        output = embedded
+        for i in range(self.n_layers):
+            output, hidden = self.gru(output, hidden)
+        return output, hidden
+
+    def initHidden(self):
+        return torch.zeros(1, 1, self.hidden_size, device=device)
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True)
+
+    def forward(self, x):
+        # Set initial states
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device) 
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        
+        # Embed word ids to vectors
+        out = self.embedding(x)
+        
+        # Forward propagate LSTM
+        out, (h_n, c_n) = self.lstm(out, (h0, c0))
+        return out, (h_n, c_n)
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True)
+
+    def forward(self, x):
+        # Set initial states
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+
+        # Embed word ids to vectors
+        out = self.embedding(x)
+
+        # Forward propagate LSTM
+        out, (h_out, _) = self.lstm(out, (h0, c0))
+
+        return out, h_out
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, n_layers=1, dropout=0):
+        super(EncoderRNN, self).__init__()
+        self.n_layers = n_layers
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout), bidirectional=True)
+    def forward(self, input_seq, input_lengths, hidden=None):
+        embedded = self.embedding(input_seq)
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
+        outputs, hidden = self.gru(packed, hidden)
+        outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs)
+        outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
+        return outputs, hidden
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers=1):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers)
+
+    def forward(self, x, hidden):
+        embedded = self.embedding(x).view(1, 1, -1)
+        output, hidden = self.lstm(embedded, hidden)
+        return output, hidden
+
+    def init_hidden(self):
+        return (torch.zeros(self.num_layers, 1, self.hidden_size, device=device),
+                torch.zeros(self.num_layers, 1, self.hidden_size, device=device))
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers=1):
+        super(EncoderRNN, self).__init__()
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers)
+
+    def forward(self, input, hidden):
+        embedded = self.embedding(input).view(1, 1, -1)
+        output = embedded
+        output, hidden = self.lstm(output, hidden)
+        return output, hidden
+
+    def initHidden(self):
+        return (torch.zeros(self.num_layers, 1, self.hidden_size),
+                torch.zeros(self.num_layers, 1, self.hidden_size))
+
+=======
+
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0.5):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = nn.Dropout(dropout)
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=num_layers, dropout=dropout, bidirectional=True)
+
+    def forward(self, input_seqs, input_lengths, hidden=None):
+        # Convert word indexes to embeddings
+        embedded = self.embedding(input_seqs)
+        embedded = self.dropout(embedded)
+        # Pack padded batch of sequences for RNN module
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
+        # Forward pass through LSTM
+        outputs, hidden = self.lstm(packed, hidden)
+        # Unpack padding
+        outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs)
+        # Sum bidirectional outputs
+        outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
+        # Return output and final hidden state
+        return outputs, hidden
